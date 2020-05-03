@@ -48,7 +48,7 @@ class GetALlBlog(tornado.web.RequestHandler):
         cursor = db.cursor(pymysql.cursors.DictCursor)
         try:
             cursor.execute(
-                "select * from blog_articles where status = '有效' limit 10"
+                "SELECT A.id, A.title, A.`timestamp`, A.views, A.greats, A.comments,U.name as 'authorname' FROM blog_articles A, blog_bloguser U WHERE A.authorname_id = U.id AND A.STATUS = '有效'LIMIT 10"
             )
             # [{},{},...,{}]字典形式
             result = cursor.fetchall()
