@@ -2,13 +2,88 @@
 import tornado.web
 import tornado.ioloop
 from tornado.options import options, define
+from tornado.escape import utf8
+from hashlib import md5
+import base64
 import os
 import pymysql
+import datetime
 import json
 
 mysqldb = pymysql.Connection(host='127.0.0.1', database='MyBlog', user='root', password='D980612ssj$', charset='utf8')
 
-import datetime
+
+def basic_auth_valid(auth_header, db):
+
+    cursor = db.cursor(pymysql.cursors.DictCursor)
+
+    if auth_header is not None:
+        # Basic Zm9vOmJhcg==
+        auth_mode, auth_base64 = auth_header.split(' ', 1)
+        assert auth_mode == 'Basic'
+        # Zm9vOmJhcg解码
+        auth_info = base64.b64decode(auth_base64)
+        # byte转str
+        auth_username, auth_password = auth_info.decode('utf-8').split(":")
+        try:
+            name = auth_username
+            cursor.execute(
+                "SELECT * FROM blog_bloguser WHERE name='{}'".format(name)
+            )
+            # [{},{},...,{}]字典形式
+            result = cursor.fetchone()
+            if result is not None:
+                password = result['password']
+                if auth_password == password:
+                    return True
+                else:
+                    return False
+            else:
+                return False
+        except Exception as e:
+            return False
+    else:
+        return False
+
+
+class BasicAuthHandler(tornado.web.RequestHandler):
+
+    def initialize(self, db):
+        self.db = db
+
+    def get(self):
+        db = self.db
+        cursor = db.cursor(pymysql.cursors.DictCursor)
+        # Authorization: Basic base64("user:passwd")
+        auth_header = self.request.headers.get('Authorization', None)
+        if auth_header is not None:
+            # Basic Zm9vOmJhcg==
+            auth_mode, auth_base64 = auth_header.split(' ', 1)
+            assert auth_mode == 'Basic'
+            # Zm9vOmJhcg解码
+            auth_info = base64.b64decode(auth_base64)
+            # byte转str
+            auth_username, auth_password = auth_info.decode('utf-8').split(":")
+            try:
+                name = auth_username
+                cursor.execute(
+                    "SELECT * FROM blog_bloguser WHERE name='{}'".format(name)
+                )
+                # [{},{},...,{}]字典形式
+                result = cursor.fetchone()
+                if result is not None:
+                    password = result['password']
+                    if auth_password == password:
+                        self.write('authentication ok')
+                    else:
+                        self.write('authentication fail')
+                else:
+                    self.write('authentication fail')
+            except Exception as e:
+                return self.write(e)
+        else:
+            self.set_status(401)
+            self.finish("Basic Authentication Required")
 
 
 class DateEncoder(json.JSONEncoder):
@@ -77,6 +152,7 @@ if __name__ == '__main__':
         (r'/', IndexHandler),
         (r'/index', HelloTornado),
         (r'/api/getallblog', GetALlBlog, dict(db=mysqldb)),
+        (r'/api/testbasicauth', BasicAuthHandler, dict(db=mysqldb)),
     ]
     app = tornado.web.Application(
         handlers,
