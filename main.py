@@ -2,6 +2,7 @@
 import tornado.web
 import tornado.ioloop
 from tornado.options import options, define
+from tornado.web import Application, RequestHandler, url
 from tornado_basic_auth import basic_auth
 import base64
 import os
@@ -131,6 +132,55 @@ class GetALlBlog(tornado.web.RequestHandler):
         cursor.close()
 
 
+@basic_auth(basic_auth_valid)
+class GetBlogByCategory(tornado.web.RequestHandler):
+
+    def initialize(self, db):
+        self.db = db
+        print("db is ok")
+
+    def get(self, category):
+        db = self.db
+        cursor = db.cursor(pymysql.cursors.DictCursor)
+        try:
+            cursor.execute(
+                "SELECT A.id, A.title, A.`timestamp`, A.views, A.greats, A.comments,U.name as 'authorname' FROM blog_articles A, blog_bloguser U WHERE A.authorname_id = U.id AND A.STATUS = '有效'LIMIT 10"
+            )
+        except Exception as e:
+            self.write(e)
+        self.write(category)
+
+
+# 用来响应用户/java请求
+class JavaHandler(RequestHandler):
+    # 重写ＲｅｑｕｅｓｔＨａｎｄｌｅｒ中initialize方法
+    # 获取动态设置的参数(greeting,info)
+    def initialize(self, greeting, info):  # 动态参数要与url路由中设置的参数必须一样
+        self.greeting = greeting
+        self.info = info
+
+    def get(self, *args, **kwargs):
+        # ｗｒｉｔｅ方法只能接受一个字符串类型的参数，但可以通过字符串的拼接实现一个参数
+        self.write(self.greeting + ',' + self.info)
+
+    def post(self, *args, **kwargs):
+        pass
+
+
+class GetPython(RequestHandler):
+
+    def get(self, age, name):
+        self.write('name:%s age:%s' % (name, age))
+
+
+class GetBlogByAny(RequestHandler):
+
+    def get(self):
+        category = self.get_query_argument('category')
+        authorname = self.get_query_argument('authorname')
+        print(category, authorname)
+
+
 settings = dict(
     template_path=os.path.join(os.path.dirname(__file__), "templates"),
     static_path=os.path.join(os.path.dirname(__file__), "statics"),
@@ -145,6 +195,10 @@ if __name__ == '__main__':
         (r'/index', HelloTornado),
         (r'/api/getallblog', GetALlBlog, dict(db=mysqldb)),
         (r'/api/testbasicauth', BasicAuthHandler, dict(db=mysqldb)),
+        (r'/api/getblogbycategory/(?P<category>.+)', GetBlogByCategory, dict(db=mysqldb)),
+        (r'/api/python/(?P<name>.+)/(?P<age>[0-9]+)', GetPython),
+        (r'/api/getblogbyany/', GetBlogByAny),
+        url('/api/java', JavaHandler, {'greeting': '你好', 'info': '家蛙'}, name='java_url'),
     ]
     app = tornado.web.Application(
         handlers,
