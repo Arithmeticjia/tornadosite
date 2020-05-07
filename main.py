@@ -169,7 +169,7 @@ class TornadoHandler(RequestHandler):
 
 class GetPython(RequestHandler):
 
-    def get(self, age, name):
+    def get(self, name, age):
         self.write('name:%s age:%s' % (name, age))
 
 
