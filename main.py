@@ -151,8 +151,8 @@ class GetBlogByCategory(tornado.web.RequestHandler):
         self.write(category)
 
 
-# 用来响应用户/java请求
-class JavaHandler(RequestHandler):
+# 响应用户/api/tornado请求
+class TornadoHandler(RequestHandler):
     # 重写ＲｅｑｕｅｓｔＨａｎｄｌｅｒ中initialize方法
     # 获取动态设置的参数(greeting,info)
     def initialize(self, greeting, info):  # 动态参数要与url路由中设置的参数必须一样
@@ -173,6 +173,7 @@ class GetPython(RequestHandler):
         self.write('name:%s age:%s' % (name, age))
 
 
+# url:http://127.0.0.1:8088/api/getblogbyany/?category=Django&authorname=ArithmeticJia
 class GetBlogByAny(RequestHandler):
 
     def get(self):
@@ -195,10 +196,13 @@ if __name__ == '__main__':
         (r'/index', HelloTornado),
         (r'/api/getallblog', GetALlBlog, dict(db=mysqldb)),
         (r'/api/testbasicauth', BasicAuthHandler, dict(db=mysqldb)),
+        # 适合页面请求
         (r'/api/getblogbycategory/(?P<category>.+)', GetBlogByCategory, dict(db=mysqldb)),
         (r'/api/python/(?P<name>.+)/(?P<age>[0-9]+)', GetPython),
+        # 适合API请求
         (r'/api/getblogbyany/', GetBlogByAny),
-        url('/api/java', JavaHandler, {'greeting': '你好', 'info': '家蛙'}, name='java_url'),
+        # 个人感觉这种场景很少用
+        url('/api/tornado', TornadoHandler, {'greeting': '你好', 'info': 'Tornado'}, name='tornado_url'),
     ]
     app = tornado.web.Application(
         handlers,
