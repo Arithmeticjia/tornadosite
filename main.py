@@ -12,6 +12,7 @@ import os
 import pymysql
 import datetime
 import json
+import time
 
 mysqldb = pymysql.Connection(host='127.0.0.1', database='MyBlog', user='root', password='D980612ssj$', charset='utf8')
 
@@ -187,6 +188,18 @@ class GetBlogByAny(RequestHandler):
         print(category, authorname)
 
 
+def doing():
+    time.sleep(10)
+    return 'Blocking'
+
+
+# 这个请求在等待的话其他请求也会被阻塞
+class BlockingHandler(tornado.web.RequestHandler):
+    def get(self):
+        result = doing()
+        self.write(result)
+
+
 class NonBlockingHandler(tornado.web.RequestHandler):
     # 线程池
     executor = ThreadPoolExecutor(4)
@@ -227,6 +240,7 @@ if __name__ == '__main__':
         # 适合API请求
         (r'/api/getblogbyany/', GetBlogByAny),
         # 个人感觉这种场景很少用
+        (r"/blocking", BlockingHandler),
         url('/api/tornado', TornadoHandler, {'greeting': '你好', 'info': 'Tornado'}, name='tornado_url'),
     ]
     app = tornado.web.Application(
