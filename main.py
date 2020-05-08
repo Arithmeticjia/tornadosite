@@ -1,9 +1,11 @@
 # -*- coding:utf-8 -*-
 import tornado.web
 import tornado.ioloop
+from tornado import gen
 from tornado.options import options, define
 from tornado.web import Application, RequestHandler, url
 from tornado_basic_auth import basic_auth
+from tornado.concurrent import run_on_executor
 from concurrent.futures import ThreadPoolExecutor
 import base64
 import os
@@ -183,6 +185,26 @@ class GetBlogByAny(RequestHandler):
         category = self.get_argument('category')
         authorname = self.get_argument('authorname')
         print(category, authorname)
+
+
+class NonBlockingHandler(tornado.web.RequestHandler):
+    # 线程池
+    executor = ThreadPoolExecutor(4)
+
+    # tornado.gen是根据generator实现的
+    @gen.coroutine
+    def get(self):
+        result = yield self.doing()
+        self.write(result)
+        print(result)
+
+    # 使用tornado 线程池不需要加上下面的装饰器到I/O函数
+    @run_on_executor
+    def doing(self):
+        # time.sleep(10)
+        # yield gen.sleep(10)
+        os.system("ping -c 20 www.baidu.com")  # 模拟I/O 任务
+        return 'Non-Blocking'
 
 
 settings = dict(
