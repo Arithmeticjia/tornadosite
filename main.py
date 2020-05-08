@@ -4,6 +4,7 @@ import tornado.ioloop
 from tornado.options import options, define
 from tornado.web import Application, RequestHandler, url
 from tornado_basic_auth import basic_auth
+from concurrent.futures import ThreadPoolExecutor
 import base64
 import os
 import pymysql
@@ -177,8 +178,10 @@ class GetPython(RequestHandler):
 class GetBlogByAny(RequestHandler):
 
     def get(self):
-        category = self.get_query_argument('category')
-        authorname = self.get_query_argument('authorname')
+        # category = self.get_query_argument('category')
+        # authorname = self.get_query_argument('authorname')
+        category = self.get_argument('category')
+        authorname = self.get_argument('authorname')
         print(category, authorname)
 
 
