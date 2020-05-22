@@ -205,6 +205,7 @@ class NonBlockingHandler(tornado.web.RequestHandler):
     executor = ThreadPoolExecutor(4)
 
     # tornado.gen是根据generator实现的
+    # tornado 协程
     @gen.coroutine
     def get(self):
         result = yield self.doing()
