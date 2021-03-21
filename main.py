@@ -1,4 +1,6 @@
 # -*- coding:utf-8 -*-
+from abc import ABC
+
 import tornado.web
 import tornado.ioloop
 from tornado import gen
@@ -75,14 +77,14 @@ class DateEncoder(json.JSONEncoder):
 
 
 # 定义处理类型
-class IndexHandler(tornado.web.RequestHandler):
+class IndexHandler(tornado.web.RequestHandler, ABC):
     # 添加一个处理get请求方式的方法
     def get(self):
         # 向响应中，添加数据
-        self.write('你都如何回忆我，带着笑或是很沉默')
+        self.write('Hello Tornado!')
 
 
-class HelloTornado(tornado.web.RequestHandler):
+class HelloTornado(tornado.web.RequestHandler, ABC):
 
     def get(self):
         self.render("HelloTornado.html")
@@ -137,7 +139,7 @@ class GetALlBlog(tornado.web.RequestHandler):
 
 
 @basic_auth(basic_auth_valid)
-class GetBlogByCategory(tornado.web.RequestHandler):
+class GetBlogByCategory(tornado.web.RequestHandler, ABC):
 
     def initialize(self, db):
         self.db = db
@@ -156,8 +158,8 @@ class GetBlogByCategory(tornado.web.RequestHandler):
 
 
 # 响应用户/api/tornado请求
-class TornadoHandler(RequestHandler):
-    # 重写ＲｅｑｕｅｓｔＨａｎｄｌｅｒ中initialize方法
+class TornadoHandler(RequestHandler, ABC):
+    # 重写RequestHandler中initialize方法
     # 获取动态设置的参数(greeting,info)
     def initialize(self, greeting, info):  # 动态参数要与url路由中设置的参数必须一样
         self.greeting = greeting
@@ -171,14 +173,14 @@ class TornadoHandler(RequestHandler):
         pass
 
 
-class GetPython(RequestHandler):
+class GetPython(RequestHandler, ABC):
 
     def get(self, name, age):
         self.write('name:%s age:%s' % (name, age))
 
 
 # url:http://127.0.0.1:8088/api/getblogbyany/?category=Django&authorname=ArithmeticJia
-class GetBlogByAny(RequestHandler):
+class GetBlogByAny(RequestHandler, ABC):
 
     def get(self):
         # category = self.get_query_argument('category')
