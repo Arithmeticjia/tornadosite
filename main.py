@@ -1,11 +1,15 @@
 # -*- coding:utf-8 -*-
 from abc import ABC
 
+import redis
 import tornado.web
 import tornado.ioloop
 from tornado import gen
 from tornado.options import options, define
 from tornado.web import Application, RequestHandler, url
+
+from fact import FactorialHandler, FactorialService
+from pi import PiHandler, PiService
 from tornado_basic_auth import basic_auth
 from tornado.concurrent import run_on_executor
 from concurrent.futures import ThreadPoolExecutor
@@ -112,7 +116,7 @@ def basic_auth_valid(user, pwd):
 
 
 @basic_auth(basic_auth_valid)
-class GetALlBlog(tornado.web.RequestHandler):
+class GetALlBlog(tornado.web.RequestHandler, ABC):
 
     def initialize(self, db):
         self.db = db
@@ -183,11 +187,8 @@ class GetPython(RequestHandler, ABC):
 class GetBlogByAny(RequestHandler, ABC):
 
     def get(self):
-        # category = self.get_query_argument('category')
-        # authorname = self.get_query_argument('authorname')
         category = self.get_argument('category')
         authorname = self.get_argument('authorname')
-        print(category, authorname)
 
 
 def doing():
@@ -196,13 +197,13 @@ def doing():
 
 
 # 这个请求在等待的话其他请求也会被阻塞
-class BlockingHandler(tornado.web.RequestHandler):
+class BlockingHandler(tornado.web.RequestHandler, ABC):
     def get(self):
         result = doing()
         self.write(result)
 
 
-class NonBlockingHandler(tornado.web.RequestHandler):
+class NonBlockingHandler(tornado.web.RequestHandler, ABC):
     # 线程池
     executor = ThreadPoolExecutor(4)
 
@@ -229,6 +230,10 @@ settings = dict(
     debug=True,
 )
 
+cache = redis.StrictRedis("localhost", 6379)
+factorial = FactorialService(cache)
+pi = PiService(cache)
+
 if __name__ == '__main__':
     # 创建一个应用对象
     define("port", default=8088, type=int, help="run server on the given port.")
@@ -242,6 +247,8 @@ if __name__ == '__main__':
         (r'/api/python/(?P<name>.+)/(?P<age>[0-9]+)', GetPython),
         # 适合API请求
         (r'/api/getblogbyany/', GetBlogByAny),
+        (r"/api/fact", FactorialHandler, {"factorial": factorial}),
+        (r"/pi", PiHandler, {"pi": pi}),
         # 个人感觉这种场景很少用
         (r"/blocking", BlockingHandler),
         url('/api/tornado', TornadoHandler, {'greeting': '你好', 'info': 'Tornado'}, name='tornado_url'),
